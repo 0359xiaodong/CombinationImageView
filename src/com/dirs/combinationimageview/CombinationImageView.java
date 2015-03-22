@@ -13,8 +13,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
-public class CombinationImageView extends ImageView {
+public class CombinationImageView extends LinearLayout {
 	private final String tag = CombinationImageView.class.getSimpleName();
 
 	private final int MAX_SIZE = 9;
@@ -53,9 +54,9 @@ public class CombinationImageView extends ImageView {
 		Log.d(tag, "call init");
 		mBitVec = new Vector<Bitmap>(MAX_SIZE);
 		View view = LayoutInflater.from(mContext).inflate(
-				R.layout.layout_imageview, (ViewGroup) getParent(), true);
+				R.layout.layout_imageview, this, true);
 		mImageView = (ImageView) view.findViewById(R.id.iv);
-		mImageView.setWillNotDraw(false);
+		mImageView.setWillNotDraw(true);
 	}
 
 	@Override
@@ -78,30 +79,6 @@ public class CombinationImageView extends ImageView {
 			throw new Exception("MAX_SIZE is " + MAX_SIZE);
 		}
 		new AsyncImgLoad().execute(vec);
-	}
-
-	@Override
-	protected void onDraw(Canvas canvas) {
-		Log.d(tag, "call onDraw");
-		// TODO Auto-generated method stub
-		super.onDraw(canvas);
-		int mTotalWidth = 0;
-		int mTotalHeight = 0;
-		for (int i = 0; i < mBitVec.size(); i++) {
-			Bitmap bm = mBitVec.get(i);
-			if (bm != null) {
-				int mWdith = bm.getWidth() + mImgSpace;
-				int mHeight = bm.getHeight() + mImgSpace;
-				canvas.drawBitmap(bm, mTotalWidth, mTotalHeight, null);
-				if ((i + 1) % 3 == 0) {
-					mTotalWidth = 0;
-					mTotalHeight += mHeight;
-				} else {
-					mTotalWidth += mWdith;
-				}
-
-			}
-		}
 	}
 
 	class AsyncImgLoad extends AsyncTask<Vector<String>, Integer, Boolean> {
@@ -138,7 +115,7 @@ public class CombinationImageView extends ImageView {
 			Log.d(tag, "onPostExecute Result:" + result);
 			if (result) {
 				Log.d(tag, "call invalidate");
-				mImageView.invalidate();
+				invalidate();
 			}
 		}
 
@@ -156,6 +133,30 @@ public class CombinationImageView extends ImageView {
 		for (Bitmap bm : mBitVec) {
 			if (bm != null && !bm.isRecycled()) {
 				bm.recycle();
+			}
+		}
+	}
+
+	@Override
+	protected void dispatchDraw(Canvas canvas) {
+		// TODO Auto-generated method stub
+		super.dispatchDraw(canvas);
+		Log.d(tag, "call dispatchDraw");
+		int mTotalWidth = 0;
+		int mTotalHeight = 0;
+		for (int i = 0; i < mBitVec.size(); i++) {
+			Bitmap bm = mBitVec.get(i);
+			if (bm != null) {
+				int mWdith = bm.getWidth() + mImgSpace;
+				int mHeight = bm.getHeight() + mImgSpace;
+				canvas.drawBitmap(bm, mTotalWidth, mTotalHeight, null);
+				if ((i + 1) % 3 == 0) {
+					mTotalWidth = 0;
+					mTotalHeight += mHeight;
+				} else {
+					mTotalWidth += mWdith;
+				}
+
 			}
 		}
 	}
