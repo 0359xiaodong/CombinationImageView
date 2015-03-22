@@ -6,22 +6,20 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 public class CombinationImageView extends ImageView {
 	private final String tag = CombinationImageView.class.getSimpleName();
-	private final boolean VLOG = true;
 
 	private final int MAX_SIZE = 9;
-	private final int ROW_IMG_COUNT = 3;
+	private Object lock = null;
+	private final int ROW_COUNT = 3;
 
 	private ImageView mImageView = null;
 	private Context mContext = null;
@@ -51,48 +49,40 @@ public class CombinationImageView extends ImageView {
 	}
 
 	private void init() {
-		Log.d(tag, "调用init");
+		lock = new Object();
+		Log.d(tag, "call init");
 		mBitVec = new Vector<Bitmap>(MAX_SIZE);
 		View view = LayoutInflater.from(mContext).inflate(
-				R.layout.layout_imageview, null);
+				R.layout.layout_imageview, (ViewGroup) getParent(), true);
 		mImageView = (ImageView) view.findViewById(R.id.iv);
+		mImageView.setWillNotDraw(false);
 	}
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-		int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
-		this.setMeasuredDimension(parentWidth, parentHeight);
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		mViewHeight = getHeight();
 		mViewWidth = getWidth();
-		Log.d(tag, "控件高度：" + mViewHeight + " -- " + mViewWidth);
-	}
-
-	private void preLoad() {
-		mImageView.invalidate();
-		int maxWidth = mViewHeight;
-		if (mViewHeight != mViewWidth) {
-			maxWidth = mViewHeight > mViewWidth ? mViewHeight : mViewWidth;
+		Log.d(tag, "onMeasure ViewHeight：" + mViewHeight + " -- Width"
+				+ mViewWidth);
+		if (mViewHeight != 0 && mViewWidth != 0) {
+			synchronized (lock) {
+				lock.notify();
+			}
 		}
-		Log.d(tag, "控件大小：" + maxWidth);
-		mImgHeight = maxWidth / ROW_IMG_COUNT;
-		mImgWidth = maxWidth / ROW_IMG_COUNT;
-		Log.d(tag, "图片高度:" + mImgHeight + " -- 宽度:" + mImgWidth);
-
 	}
 
 	public void loadImg(Vector<String> vec) throws Exception {
-		Log.d(tag, "调用loadImg");
+		Log.d(tag, "call loadImg");
 		if (vec.size() > MAX_SIZE) {
-			throw new Exception("图片数组长度大于最大限制");
+			throw new Exception("MAX_SIZE is " + MAX_SIZE);
 		}
-		preLoad();
 		new AsyncImgLoad().execute(vec);
 	}
 
 	@Override
 	protected void onDraw(Canvas canvas) {
+		Log.d(tag, "call onDraw");
 		// TODO Auto-generated method stub
 		super.onDraw(canvas);
 		int mTotalWidth = 0;
@@ -109,6 +99,7 @@ public class CombinationImageView extends ImageView {
 				} else {
 					mTotalWidth += mWdith;
 				}
+
 			}
 		}
 	}
@@ -117,15 +108,25 @@ public class CombinationImageView extends ImageView {
 
 		@Override
 		protected Boolean doInBackground(Vector<String>... params) {
+			synchronized (lock) {
+				try {
+					lock.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			preLoad();
+			Log.d(tag, "doInBackground");
 			Vector<String> vec = params[0];
 			if (vec.size() == 0) {
 				return false;
 			}
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			for (String path : vec) {
-				Log.d(path, "加载图片：" + path + "目标宽度：" + mImgWidth);
 				Bitmap bm = BitmapFactory.decodeFile(path, options);
-				mBitVec.add(Bitmap.createScaledBitmap(bm,35,35,true));
+				mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
+						mImgHeight, true));
 			}
 			return true;
 		}
@@ -134,12 +135,29 @@ public class CombinationImageView extends ImageView {
 		protected void onPostExecute(Boolean result) {
 			// TODO Auto-generated method stub
 			super.onPostExecute(result);
-			Log.d(tag, "异步执行结果:" + result);
+			Log.d(tag, "onPostExecute Result:" + result);
 			if (result) {
+				Log.d(tag, "call invalidate");
 				mImageView.invalidate();
 			}
 		}
 
+		private void preLoad() {
+			mImgHeight = (int) mViewHeight / ROW_COUNT;
+			mImgWidth = (int) mViewWidth / ROW_COUNT;
+		}
+	}
+
+	@Override
+	protected void onDetachedFromWindow() {
+		// TODO Auto-generated method stub
+		super.onDetachedFromWindow();
+		Log.d(tag, "call onDetachedFromWindow");
+		for (Bitmap bm : mBitVec) {
+			if (bm != null && !bm.isRecycled()) {
+				bm.recycle();
+			}
+		}
 	}
 
 }
