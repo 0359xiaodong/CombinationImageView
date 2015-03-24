@@ -105,12 +105,11 @@ public class CombinationImageView extends LinearLayout {
 			if (mVec.size() == 0) {
 				return false;
 			}
-			preLoad(mVec.size());
-			BitmapFactory.Options options = new BitmapFactory.Options();
+			preLoad();
 			for (String path : mVec) {
 				File fp = new File(path);
 				if (fp.exists()) {
-					Bitmap bm = BitmapFactory.decodeFile(path, options);
+					Bitmap bm = BitmapFactory.decodeFile(path);
 					mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
 							mImgHeight, true));
 				} else {
@@ -136,11 +135,11 @@ public class CombinationImageView extends LinearLayout {
 			}
 		}
 
-		private void preLoad(int imgCount) {
-			int view_size = mViewHeight * mViewWidth;
-			int pre = view_size / imgCount;
-			mImgHeight = (pre / 4) - mImgSpace;
-			mImgWidth = (pre / 4) - mImgSpace;
+		private void preLoad() {
+			int b_width = mViewWidth / 3;
+			int b_hegith = mViewHeight / 3;
+			mImgHeight = b_hegith - mImgSpace;
+			mImgWidth = b_width - mImgSpace;
 		}
 
 	}
