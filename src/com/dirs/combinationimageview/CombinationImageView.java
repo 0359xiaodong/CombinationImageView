@@ -99,13 +99,13 @@ public class CombinationImageView extends LinearLayout {
 					e.printStackTrace();
 				}
 			}
-			preLoad();
 			if (VDEBUG) {
 				Log.d(tag, "doInBackground");
 			}
 			if (mVec.size() == 0) {
 				return false;
 			}
+			preLoad(mVec.size());
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			for (String path : mVec) {
 				File fp = new File(path);
@@ -136,9 +136,11 @@ public class CombinationImageView extends LinearLayout {
 			}
 		}
 
-		private void preLoad() {
-			mImgHeight = ((int) mViewHeight / ROW_COUNT) - mImgSpace;
-			mImgWidth = ((int) mViewWidth / ROW_COUNT) - mImgSpace;
+		private void preLoad(int imgCount) {
+			int view_size = mViewHeight * mViewWidth;
+			int pre = view_size / imgCount;
+			mImgHeight = (pre / 4) - mImgSpace;
+			mImgWidth = (pre / 4) - mImgSpace;
 		}
 
 	}
@@ -169,7 +171,7 @@ public class CombinationImageView extends LinearLayout {
 				int mWdith = bm.getWidth() + mImgSpace;
 				int mHeight = bm.getHeight() + mImgSpace;
 				canvas.drawBitmap(bm, mTotalWidth, mTotalHeight, null);
-				if ((i + 1) % 3 == 0) {
+				if ((i + 1) % ROW_COUNT == 0) {
 					mTotalWidth = 0;
 					mTotalHeight += mHeight;
 				} else {
