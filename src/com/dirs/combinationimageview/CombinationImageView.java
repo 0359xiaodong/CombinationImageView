@@ -1,5 +1,6 @@
 package com.dirs.combinationimageview;
 
+import java.io.File;
 import java.util.Vector;
 
 import android.content.Context;
@@ -11,13 +12,12 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 public class CombinationImageView extends LinearLayout {
 	private final String tag = CombinationImageView.class.getSimpleName();
-
+	private final boolean VDEBUG = true;
 	private final int MAX_SIZE = 9;
 	private Object lock = null;
 	private final int ROW_COUNT = 3;
@@ -78,58 +78,77 @@ public class CombinationImageView extends LinearLayout {
 		if (vec.size() > MAX_SIZE) {
 			throw new Exception("MAX_SIZE is " + MAX_SIZE);
 		}
-		new AsyncImgLoad().execute(vec);
+		new AsyncImgLoad(vec).execute();
 	}
 
-	class AsyncImgLoad extends AsyncTask<Vector<String>, Integer, Boolean> {
+	class AsyncImgLoad extends AsyncTask<Void, Integer, Boolean> {
+		private Vector<String> mVec = null;
+
+		public AsyncImgLoad(Vector<String> mVec) {
+			super();
+			this.mVec = mVec;
+		}
 
 		@Override
-		protected Boolean doInBackground(Vector<String>... params) {
+		protected Boolean doInBackground(Void... params) {
 			synchronized (lock) {
 				try {
+					// wait to onMeasure executed and get view size
 					lock.wait();
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
-			preLoad();
-			Log.d(tag, "doInBackground");
-			Vector<String> vec = params[0];
-			if (vec.size() == 0) {
+			if (VDEBUG) {
+				Log.d(tag, "doInBackground");
+			}
+			if (mVec.size() == 0) {
 				return false;
 			}
+			preLoad(mVec.size());
 			BitmapFactory.Options options = new BitmapFactory.Options();
-			for (String path : vec) {
-				Bitmap bm = BitmapFactory.decodeFile(path, options);
-				mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
-						mImgHeight, true));
+			for (String path : mVec) {
+				File fp = new File(path);
+				if (fp.exists()) {
+					Bitmap bm = BitmapFactory.decodeFile(path, options);
+					mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
+							mImgHeight, true));
+				} else {
+					if (VDEBUG) {
+						Log.e(tag, "file:" + path + " not exits!!!");
+					}
+				}
 			}
 			return true;
 		}
 
 		@Override
 		protected void onPostExecute(Boolean result) {
-			// TODO Auto-generated method stub
 			super.onPostExecute(result);
-			Log.d(tag, "onPostExecute Result:" + result);
+			if (VDEBUG) {
+				Log.d(tag, "onPostExecute Result:" + result);
+			}
 			if (result) {
-				Log.d(tag, "call invalidate");
+				if (VDEBUG) {
+					Log.d(tag, "call invalidate");
+				}
 				invalidate();
 			}
 		}
 
-		private void preLoad() {
-			mImgHeight = (int) mViewHeight / ROW_COUNT;
-			mImgWidth = (int) mViewWidth / ROW_COUNT;
+		private void preLoad(int imgCount) {
+			int view_size = mViewHeight * mViewWidth;
+			int pre = view_size / imgCount;
+			mImgHeight = (pre / 4) - mImgSpace;
+			mImgWidth = (pre / 4) - mImgSpace;
 		}
+
 	}
 
 	@Override
 	protected void onDetachedFromWindow() {
 		// TODO Auto-generated method stub
 		super.onDetachedFromWindow();
-		Log.d(tag, "call onDetachedFromWindow");
 		for (Bitmap bm : mBitVec) {
 			if (bm != null && !bm.isRecycled()) {
 				bm.recycle();
@@ -141,7 +160,9 @@ public class CombinationImageView extends LinearLayout {
 	protected void dispatchDraw(Canvas canvas) {
 		// TODO Auto-generated method stub
 		super.dispatchDraw(canvas);
-		Log.d(tag, "call dispatchDraw");
+		if (VDEBUG) {
+			Log.d(tag, "call dispatchDraw");
+		}
 		int mTotalWidth = 0;
 		int mTotalHeight = 0;
 		for (int i = 0; i < mBitVec.size(); i++) {
@@ -150,7 +171,7 @@ public class CombinationImageView extends LinearLayout {
 				int mWdith = bm.getWidth() + mImgSpace;
 				int mHeight = bm.getHeight() + mImgSpace;
 				canvas.drawBitmap(bm, mTotalWidth, mTotalHeight, null);
-				if ((i + 1) % 3 == 0) {
+				if ((i + 1) % ROW_COUNT == 0) {
 					mTotalWidth = 0;
 					mTotalHeight += mHeight;
 				} else {
