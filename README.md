@@ -23,7 +23,7 @@
 Warring
 ------
 目前图片的数量只能小于等于9张，如果超出9张图片，loadImg方法会抛出异常。
-需要的如下权限<br>
+需要如下权限<br>
 ```
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.INTERNET" />
