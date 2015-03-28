@@ -3,6 +3,8 @@ package com.dirs.combinationimageview;
 import java.io.File;
 import java.util.Vector;
 
+import com.dirs.combinationimageview.Utils.HttpClientHelper;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -64,7 +66,7 @@ public class CombinationImageView extends LinearLayout {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		mViewHeight = getHeight();
 		mViewWidth = getWidth();
-		Log.d(tag, "onMeasure ViewHeight£º" + mViewHeight + " -- Width"
+		Log.d(tag, "onMeasure ViewHeight" + mViewHeight + " -- Width"
 				+ mViewWidth);
 		if (mViewHeight != 0 && mViewWidth != 0) {
 			synchronized (lock) {
@@ -106,15 +108,24 @@ public class CombinationImageView extends LinearLayout {
 				return false;
 			}
 			preLoad();
+			HttpClientHelper mHelper = new HttpClientHelper();
 			for (String path : mVec) {
-				File fp = new File(path);
+				File fp = null;
+				if (isNetFile(path)) {
+					String resPath = mHelper.download(path);
+					fp = new File(resPath);
+				} else {
+					fp = new File(path);
+				}
+
 				if (fp.exists()) {
-					Bitmap bm = BitmapFactory.decodeFile(path);
+					Bitmap bm = BitmapFactory.decodeFile(fp.getAbsolutePath());
 					mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
 							mImgHeight, true));
+					bm.recycle();
 				} else {
 					if (VDEBUG) {
-						Log.e(tag, "file:" + path + " not exits!!!");
+						Log.e(tag, "file:" + path + "does not exit!");
 					}
 				}
 			}
@@ -140,6 +151,14 @@ public class CombinationImageView extends LinearLayout {
 			int b_hegith = mViewHeight / 3;
 			mImgHeight = b_hegith - mImgSpace;
 			mImgWidth = b_width - mImgSpace;
+		}
+
+		private boolean isNetFile(String path) {
+			if (path.startsWith("http://") && path.endsWith(".jpg")) {
+				return true;
+			} else {
+				return false;
+			}
 		}
 
 	}
