@@ -19,7 +19,8 @@
 ### 0x3 <br>
 在程序里面，调用CombinationImageView的`loadImg`方法加载图片，该方法接受一个`vector`对象，内容为图片的路径。<br>
 `vector`对象可以为本地路径，或者是网络图片的路径。如果是网络图片，会自动下载并缓存到`外置存储卡/.android/folder/image`文件夹下
-
+<br>
+使用`setEnableWaitText(boolean b, String msg)`方法可以设置等待解码时控件上显示的文本。`msg`参数为显示的文本，只有在`b`参数为true时有效
 Warring
 ------
 目前图片的数量只能小于等于9张，如果超出9张图片，loadImg方法会抛出异常。
