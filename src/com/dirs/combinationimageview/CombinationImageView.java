@@ -8,7 +8,10 @@ import com.dirs.combinationimageview.Utils.HttpClientHelper;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -34,6 +37,15 @@ public class CombinationImageView extends LinearLayout {
 
 	private int mViewWidth = 0;
 	private int mViewHeight = 0;
+
+	/**
+	 * if true,show wait text in file downloading
+	 */
+	private boolean mEnableWaitText = true;
+	/**
+	 * wait text
+	 */
+	private String mWaitText = "Loading";
 
 	private Vector<Bitmap> mBitVec = null;
 
@@ -75,6 +87,11 @@ public class CombinationImageView extends LinearLayout {
 		}
 	}
 
+	public void setEnableWaitText(boolean b, String msg) {
+		mEnableWaitText = b;
+		mWaitText = msg;
+	}
+
 	public void loadImg(Vector<String> vec) throws Exception {
 		Log.d(tag, "call loadImg");
 		if (vec.size() > MAX_SIZE) {
@@ -85,6 +102,10 @@ public class CombinationImageView extends LinearLayout {
 
 	class AsyncImgLoad extends AsyncTask<Void, Integer, Boolean> {
 		private Vector<String> mVec = null;
+		/**
+		 * max file size
+		 */
+		private final long MAX_FILE_SIZE = 1024;
 
 		public AsyncImgLoad(Vector<String> mVec) {
 			super();
@@ -109,6 +130,8 @@ public class CombinationImageView extends LinearLayout {
 			}
 			preLoad();
 			HttpClientHelper mHelper = new HttpClientHelper();
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inSampleSize = 4;
 			for (String path : mVec) {
 				File fp = null;
 				if (isNetFile(path)) {
@@ -119,10 +142,21 @@ public class CombinationImageView extends LinearLayout {
 				}
 
 				if (fp.exists()) {
-					Bitmap bm = BitmapFactory.decodeFile(fp.getAbsolutePath());
-					mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
-							mImgHeight, true));
-					bm.recycle();
+					Bitmap bm = null;
+					if (fp.length() <= MAX_FILE_SIZE) {
+						bm = BitmapFactory.decodeFile(fp.getAbsolutePath());
+					} else {
+						bm = BitmapFactory.decodeFile(fp.getAbsolutePath(),
+								options);
+					}
+					if (bm != null) {
+						mBitVec.add(Bitmap.createScaledBitmap(bm, mImgWidth,
+								mImgHeight, true));
+						bm.recycle();
+					} else {
+						Log.e(tag, "decodeFile:" + fp.getAbsolutePath()
+								+ "failed!");
+					}
 				} else {
 					if (VDEBUG) {
 						Log.e(tag, "file:" + path + "does not exit!");
@@ -176,10 +210,17 @@ public class CombinationImageView extends LinearLayout {
 
 	@Override
 	protected void dispatchDraw(Canvas canvas) {
-		// TODO Auto-generated method stub
 		super.dispatchDraw(canvas);
 		if (VDEBUG) {
 			Log.d(tag, "call dispatchDraw");
+		}
+		if (mBitVec.size() == 0 && mEnableWaitText) {
+			Paint pt = new Paint();
+			pt.setTextSize(pt.getTextSize() * 5);
+			pt.setColor(Color.BLACK);
+			canvas.drawText(mWaitText,
+					(mViewWidth - pt.measureText(mWaitText)) / 2,
+					mViewHeight / 2, pt);
 		}
 		int mTotalWidth = 0;
 		int mTotalHeight = 0;
