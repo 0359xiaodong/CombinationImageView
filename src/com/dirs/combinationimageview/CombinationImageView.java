@@ -25,7 +25,7 @@ public class CombinationImageView extends LinearLayout {
 	private final boolean VDEBUG = true;
 	private final int MAX_SIZE = 9;
 	private Object lock = null;
-	private final int ROW_COUNT = 3;
+	private int ROW_COUNT = 3;
 
 	private ImageView mImageView = null;
 	private Context mContext = null;
@@ -181,8 +181,33 @@ public class CombinationImageView extends LinearLayout {
 		}
 
 		private void preLoad() {
-			int b_width = mViewWidth / 3;
-			int b_hegith = mViewHeight / 3;
+			int b_width = mViewWidth;
+			int b_hegith = mViewHeight;
+			switch (mVec.size()) {
+			case 2:
+				b_width = mViewWidth / 2;
+				break;
+			case 3:
+			case 4:
+				b_hegith = mViewHeight / 2;
+				b_width = mViewWidth / 2;
+				ROW_COUNT = 2;
+				break;
+			case 5:
+			case 6:
+				b_hegith = mViewHeight / 3;
+				b_width = mViewWidth / 2;
+				ROW_COUNT = 2;
+				break;
+			case 7:
+			case 8:
+			case 9:
+				b_hegith = mViewHeight / 3;
+				b_width = mViewWidth / 3;
+				ROW_COUNT = 3;
+				break;
+			}
+
 			mImgHeight = b_hegith - mImgSpace;
 			mImgWidth = b_width - mImgSpace;
 		}
